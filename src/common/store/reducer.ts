@@ -1,20 +1,29 @@
 import { combineReducers } from 'redux';
 import makeSyncReducer from './sync/root-reducer';
 import tab, {ITabState} from './tab/reducer';
+import runtime, {IRuntimeState} from './runtime';
 
 export interface IState {
   tab: ITabState;
+  runtime: IRuntimeState;
 }
 
 const contentScriptReducer = combineReducers<IState>({
   tab,
+  runtime,
 });
 
 const popupReducer = combineReducers<IState>({
   tab,
+  runtime,
 });
 
-const backgroundReducer = combineReducers<IState>({
+export interface IBackgroundState {
+  runtime: IRuntimeState;
+}
+
+const backgroundReducer = combineReducers<IBackgroundState>({
+  runtime,
 });
 
 export const syncContentScriptReducer = makeSyncReducer(contentScriptReducer);

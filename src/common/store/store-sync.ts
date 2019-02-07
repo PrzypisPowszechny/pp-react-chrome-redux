@@ -3,6 +3,7 @@ import {setClonedState, setPatchedState} from './sync/actions';
 import deepDiff from './sync/deepDiff/diff';
 import patch from './sync/deepDiff/patch';
 import _ from 'lodash';
+import {promisify} from 'util';
 
 export const STORE_PATCH_PROPAGATE = 'STORE_PATCH_PROPAGATE';
 export const STORE_CLONE_REQUEST = 'STORE_CLONE_REQUEST';
@@ -17,9 +18,10 @@ export default abstract class StoreSync {
   protected unsubscribe: () => void;
   protected isSyncing: boolean;
   protected prevState: any;
+  protected id: any;
 
   // Fields to overwrite in child class
-  protected identity: string;
+  protected identityType: string;
   protected patchedKeys: string[];
 
   constructor(store: Store<any>) {
@@ -31,7 +33,23 @@ export default abstract class StoreSync {
   init() {
     chrome.runtime.onMessage.addListener(this.onMessage);
     this.unsubscribe = this.store.subscribe(this.onStoreChanged);
-    return this.cloneStore();
+
+    return this.getTabId()
+      .then((tabId) => {
+        console.log('ID', tabId);
+      this.id = `${this.identityType}: ${tabId || 0}`;
+    })
+      .then(() => this.cloneStore());
+  }
+
+  getTabId() {
+    // meaningful only for content scripts; 0 otherwise
+    if (this.identityType !== CONTENT_SCRIPT_INITIATOR) {
+      return Promise.resolve(null);
+    }
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({action: 'GET_TAB_ID'}, (response) => resolve(response));
+    });
   }
 
   syncStore(newState, patchAction = false) {
@@ -57,10 +75,10 @@ export default abstract class StoreSync {
   }
 
   onMessage = (request, sender, sendResponse) => {
-    console.debug(`Received ${request.action} message from ${request.initiator}`);
+    console.debug(`Received ${request.action} message from ${request.initiatorId}`);
     switch (request.action) {
       case STORE_PATCH_PROPAGATE:
-        if (request.initiator !== this.identity) {
+        if (request.initiatorId !== this.id) {
           console.debug(request.patch);
           this.handlePatch(request);
         }
@@ -85,14 +103,16 @@ export default abstract class StoreSync {
     return {
       action: STORE_PATCH_PROPAGATE,
       patch: diff,
-      initiator: this.identity,
+      initiatorId: this.id,
+      initiatorType: this.identityType,
     };
   }
 
   getCloneMessage() {
     return {
       action: STORE_CLONE_REQUEST,
-      initiator: this.identity,
+      initiatorId: this.id,
+      identityType: this.identityType,
     };
   }
 
@@ -131,7 +151,7 @@ export default abstract class StoreSync {
 }
 
 export class ContentScriptStoreSync extends StoreSync {
-  identity = CONTENT_SCRIPT_INITIATOR;
+  identityType = CONTENT_SCRIPT_INITIATOR;
   patchedKeys = ['tab', 'runtime', 'storage'];
 
   cloneStore() {
@@ -154,7 +174,7 @@ export class ContentScriptStoreSync extends StoreSync {
 }
 
 export class PopupStoreSync extends StoreSync {
-  identity = POPUP_INITIATOR;
+  identityType = POPUP_INITIATOR;
   patchedKeys = ['tab', 'runtime', 'storage'];
 
   cloneStore() {
@@ -180,8 +200,35 @@ export class PopupStoreSync extends StoreSync {
 }
 
 export class BackgroundStoreSync extends StoreSync {
-  identity = BACKGROUND_INITIATOR;
+  identityType = BACKGROUND_INITIATOR;
   patchedKeys = ['runtime', 'storage'];
+
+  init() {
+    super.init();
+    chrome.runtime.onMessage.addListener(this.passMessage);
+  }
+
+  destroy() {
+    super.destroy();
+    chrome.runtime.onMessage.removeListener(this.passMessage);
+  }
+
+  passMessage = (request, sender, sendResponse) => {
+    // pass messages from content script to other content scripts
+    switch (request.action) {
+      case STORE_PATCH_PROPAGATE:
+        console.debug(`Received a ${STORE_PATCH_PROPAGATE} message from ${request.initiatorId}`);
+        if (request.initiatorType === CONTENT_SCRIPT_INITIATOR) {
+          chrome.tabs.query({}, (tabs) => {
+            for (const tab of tabs) {
+              chrome.tabs.sendMessage(tab.id, request);
+            }
+          });
+        }
+        break;
+    }
+  }
+
 
   cloneStore() {
 

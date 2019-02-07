@@ -6,15 +6,18 @@ import {
   showWidget,
   hideWidget,
 } from 'common/store/tab/counter';
+import {updateUserName} from 'common/store/runtime';
 
 @connect(
   state => ({
     tab: state.tab,
+    runtime: state.runtime,
   }), {
     increment,
     decrement,
     showWidget,
     hideWidget,
+    updateUserName,
   },
 )
 export default class StateDisplay extends React.Component {
@@ -26,6 +29,7 @@ export default class StateDisplay extends React.Component {
   render() {
     let currentUrl = '';
     let amount = '';
+    let userName = '';
 
     const tab = this.props.tab;
     if (tab) {
@@ -40,6 +44,10 @@ export default class StateDisplay extends React.Component {
         amount = counter.amount;
       }
     }
+    const runtime = this.props.runtime;
+    if (runtime) {
+      userName = runtime.userName;
+    }
     return (
       <div>
         <span> Content script URL: {currentUrl} </span> <br/>
@@ -49,6 +57,8 @@ export default class StateDisplay extends React.Component {
         <br/>
         <button onClick={() => this.props.showWidget()}>show counter in cs</button>
         <button onClick={() => this.props.hideWidget()}>hide counter in cs</button>
+        <h3> runtime username </h3>
+        <input type="text" value={userName} onChange={(e) => this.props.updateUserName(e.target.value)} />
       </div>
     );
   }

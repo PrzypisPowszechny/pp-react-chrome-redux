@@ -5,10 +5,9 @@ export default function(appReducer) {
   return (state, action) => {
     switch (action.type) {
       case SET_CLONED_STATE:
+      case SET_PATCHED_STATE:
         console.log('new state:', { ...action.payload.newState });
         return { ...action.payload.newState };
-      case SET_PATCHED_STATE:
-        // TODO
       default:
         return appReducer(state, action);
     }
