@@ -85,6 +85,21 @@ export default abstract class StoreSync {
     };
   }
 
+  getCloneMessage() {
+    return {
+      action: STORE_CLONE_REQUEST,
+      initiator: this.identity,
+    };
+  }
+
+  handleCloneResponse = (response) => {
+    if (response) {
+      this.syncStore(response.state);
+    } else {
+      console.error(`Received no response for ${STORE_CLONE_REQUEST} message`);
+    }
+  }
+
   handlePatch(request) {
     const filteredPatch = this.filterForApplicablePatch(request.patch);
     console.debug(filteredPatch);
@@ -116,7 +131,11 @@ export class ContentScriptStoreSync extends StoreSync {
   patchedKeys = ['tab', 'runtime', 'storage'];
 
   cloneStore() {
-    // TODO
+    console.debug('Initiating store by cloning');
+    chrome.runtime.sendMessage(
+      this.getCloneMessage(),
+      this.handleCloneResponse,
+    );
   }
 
   propagateStoreChange(diff: any) {
@@ -126,7 +145,6 @@ export class ContentScriptStoreSync extends StoreSync {
   }
 }
 
-
 export class PopupStoreSync extends StoreSync {
   identity = POPUP_INITIATOR;
   patchedKeys = ['tab', 'runtime', 'storage'];
@@ -134,19 +152,11 @@ export class PopupStoreSync extends StoreSync {
   cloneStore() {
     console.debug('Initiating store by cloning');
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-      chrome.tabs.sendMessage(tabs[0].id,
-        {
-          action: STORE_CLONE_REQUEST,
-        }, ((response) => {
-          Promise.resolve(response).then((response) => {
-            if (response) {
-              this.syncStore(response.state);
-            } else {
-              console.error(`Received no response for ${STORE_CLONE_REQUEST} message`);
-            }
-          });
-        }));
-    });
+      chrome.tabs.sendMessage(
+        tabs[0].id,
+        this.getCloneMessage(),
+        this.handleCloneResponse,
+    )});
   }
 
   propagateStoreChange(diff: any) {
@@ -165,10 +175,13 @@ export class BackgroundStoreSync extends StoreSync {
   patchedKeys = ['runtime', 'storage'];
 
   cloneStore() {
+
   }
 
   propagateStoreChange(diff: any) {
+    const message = this.getPatchMessage(diff);
+    console.log(message);
+    chrome.runtime.sendMessage(message);
   }
-
 
 }
