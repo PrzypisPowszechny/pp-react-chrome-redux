@@ -1,5 +1,5 @@
 import React from 'react';
-import { connect } from 'react-redux';
+import {connect} from 'react-redux';
 import Modal from './Modal/Modal';
 
 interface AppProps {
@@ -24,7 +24,8 @@ export default class App extends React.Component<Partial<AppProps>, {}> {
   renderWidget() {
     return (
       <Modal>
-        <div> counter: {this.props.tab.counter.amount} </div>
+        <div style={{'background-color': 'white';
+          'padding': '100px';}}> counter: {this.props.tab.counter.amount} </div>
       </Modal>
     );
   }
