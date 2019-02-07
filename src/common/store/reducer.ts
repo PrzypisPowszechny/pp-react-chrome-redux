@@ -1,13 +1,22 @@
 import { combineReducers } from 'redux';
-import rootSyncReducer from './sync/root-reducer';
+import makeSyncReducer from './sync/root-reducer';
 import tab, {ITabState} from './tab/reducer';
 
 export interface IState {
   tab: ITabState;
 }
 
-const appReducer = combineReducers<IState>({
+const contentScriptReducer = combineReducers<IState>({
   tab,
 });
 
-export default rootSyncReducer(appReducer);
+const popupReducer = combineReducers<IState>({
+  tab,
+});
+
+const backgroundReducer = combineReducers<IState>({
+});
+
+export const syncContentScriptReducer = makeSyncReducer(contentScriptReducer);
+export const syncPopupReducer = makeSyncReducer(popupReducer);
+export const syncBackgroundReducer = makeSyncReducer(backgroundReducer);

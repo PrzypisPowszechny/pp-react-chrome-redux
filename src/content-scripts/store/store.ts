@@ -1,6 +1,6 @@
 import { applyMiddleware, compose, createStore, Store } from 'redux';
 import thunk from 'redux-thunk';
-import rootReducer, {IState} from '../../common/store/reducer';
+import {IState, syncContentScriptReducer} from '../../common/store/reducer';
 import promise from 'redux-promise';
 import { createLogger } from 'redux-logger';
 import {ContentScriptStoreSync} from '../../common/store/store-sync';
@@ -18,13 +18,12 @@ if (PPSettings.DEV) {
   middlewares.push(logger);
 }
 const store: Store<IState> = createStore(
-  rootReducer,
+  syncContentScriptReducer,
   composeEnhancers(
     applyMiddleware(...middlewares),
   ),
 );
 
-const storeSync = new ContentScriptStoreSync(store);
-storeSync.init();
+export const storeSync = new ContentScriptStoreSync(store);
 
 export default store;

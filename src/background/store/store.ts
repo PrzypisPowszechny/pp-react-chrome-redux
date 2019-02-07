@@ -1,6 +1,6 @@
 import {applyMiddleware, compose, createStore, Store} from 'redux';
 import thunk from 'redux-thunk';
-import rootReducer, {IState} from '../../common/store/reducer';
+import {IState, syncBackgroundReducer} from '../../common/store/reducer';
 import promise from 'redux-promise';
 import {createLogger} from 'redux-logger';
 import {BackgroundStoreSync} from '../../common/store/store-sync';
@@ -20,13 +20,12 @@ if (PPSettings.DEV) {
   middlewares.push(logger);
 }
 const store: Store<IState> = createStore(
-  rootReducer,
+  syncBackgroundReducer,
   composeEnhancers(
     applyMiddleware(...middlewares),
   ),
 );
 
-const storeSync = new BackgroundStoreSync(store);
-storeSync.init();
+export const storeSync = new BackgroundStoreSync(store);
 
 export default store;

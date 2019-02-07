@@ -1,6 +1,6 @@
 import { applyMiddleware, compose, createStore, Store } from 'redux';
 import thunk from 'redux-thunk';
-import rootReducer, {IState} from '../../common/store/reducer';
+import {IState, syncPopupReducer} from '../../common/store/reducer';
 import promise from 'redux-promise';
 import { createLogger } from 'redux-logger';
 import {PopupStoreSync} from '../../common/store/store-sync';
@@ -18,7 +18,7 @@ if (PPSettings.DEV) {
   middlewares.push(logger);
 }
 const store: Store<IState> = createStore(
-  rootReducer,
+  syncPopupReducer,
   composeEnhancers(
     applyMiddleware(...middlewares),
   ),

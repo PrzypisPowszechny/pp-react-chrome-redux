@@ -31,7 +31,7 @@ export default abstract class StoreSync {
   init() {
     chrome.runtime.onMessage.addListener(this.onMessage);
     this.unsubscribe = this.store.subscribe(this.onStoreChanged);
-    this.cloneStore();
+    return this.cloneStore();
   }
 
   syncStore(newState) {
@@ -47,16 +47,16 @@ export default abstract class StoreSync {
     return this.patchedKeys;
   }
 
-  filterForApplicablePatch(diff: any[]) {
+  filterForApplicablePatch(diff: any[]): any[] {
     const patchedKeys = this.getPatchedKeys();
     return diff.filter(item => _.includes(patchedKeys, item.key));
   }
 
   onMessage = (request, sender, sendResponse) => {
+    console.debug(`Received ${request.action} message from ${request.initiator}`);
     switch (request.action) {
       case STORE_PATCH_PROPAGATE:
         if (request.initiator !== this.identity) {
-          console.debug(`Received ${request.action} message from ${request.initiator}`);
           console.debug(request.patch);
           this.handlePatch(request);
         }
@@ -96,13 +96,13 @@ export default abstract class StoreSync {
     if (response) {
       this.syncStore(response.state);
     } else {
-      console.error(`Received no response for ${STORE_CLONE_REQUEST} message`);
+      throw new Error(`Received no response for ${STORE_CLONE_REQUEST} message`);
     }
   }
 
   handlePatch(request) {
     const filteredPatch = this.filterForApplicablePatch(request.patch);
-    console.debug(filteredPatch);
+    console.debug('Filtered patch: ', filteredPatch);
     const newState = patch(this.store.getState(), filteredPatch);
     this.syncStore(newState);
   }
@@ -131,11 +131,15 @@ export class ContentScriptStoreSync extends StoreSync {
   patchedKeys = ['tab', 'runtime', 'storage'];
 
   cloneStore() {
-    console.debug('Initiating store by cloning');
-    chrome.runtime.sendMessage(
-      this.getCloneMessage(),
-      this.handleCloneResponse,
-    );
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        this.getCloneMessage(),
+        (response) => {
+          this.handleCloneResponse(response);
+          resolve();
+        },
+      );
+    });
   }
 
   propagateStoreChange(diff: any) {
@@ -156,7 +160,8 @@ export class PopupStoreSync extends StoreSync {
         tabs[0].id,
         this.getCloneMessage(),
         this.handleCloneResponse,
-    )});
+      );
+    });
   }
 
   propagateStoreChange(diff: any) {
