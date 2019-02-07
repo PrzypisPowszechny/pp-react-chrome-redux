@@ -1,20 +1,29 @@
 import React from 'react';
+import { connect } from 'react-redux';
 
 import '../css/popup.scss';
 
-export default class BrowserPopup extends React.Component<{},{}> {
+@connect(
+  state => ({
+    tab: state.tab,
+  })
+)
+export default class BrowserPopup extends React.Component {
   constructor(props: {}) {
     super(props);
-
     this.state = {
     };
   }
 
   render() {
-
+    console.log('render');
+    const url = (this.props.tab ||{}).currentUrl;
     return (
-      <div> Popup </div>
-    )
-      ;
+      <div>
+        {this.props.tab &&
+          <span> Content script URL: {url} </span>
+        }
+      </div>
+    );
   }
 }

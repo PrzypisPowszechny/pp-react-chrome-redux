@@ -1,5 +1,5 @@
 import React from 'react';
-import { Provider } from 'react-redux';
+import {Provider} from 'react-redux';
 
 import IPPSettings from 'common/PPSettings';
 import appComponent from './modules/app-component';
@@ -8,6 +8,9 @@ import appComponent from './modules/app-component';
 declare global {
   const PPSettings: IPPSettings;
 }
+
+import store from './store/store';
+import {updateTabInfo} from '../common/store/tab/actions';
 
 console.log('Content script working!');
 
@@ -25,6 +28,10 @@ console.log('Content script working!');
 
 const isBrowser = typeof window !== 'undefined';
 if (isBrowser) {
+  store.dispatch(updateTabInfo({
+    currentUrl: window.location.href,
+  }));
+
   window.addEventListener('load', () => {
     /*
      * Modules hooked to Redux store
@@ -33,4 +40,3 @@ if (isBrowser) {
     appComponent.init();
   });
 }
-

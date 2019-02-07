@@ -3,7 +3,7 @@ import thunk from 'redux-thunk';
 import rootReducer, {IState} from '../../common/store/reducer';
 import promise from 'redux-promise';
 import { createLogger } from 'redux-logger';
-import {ContentScriptStoreSync} from '../../common/store/store-sync';
+import {PopupStoreSync} from '../../common/store/store-sync';
 
 // TS override
 declare global {
@@ -24,7 +24,7 @@ const store: Store<IState> = createStore(
   ),
 );
 
-const storeSync = new ContentScriptStoreSync(store);
+const storeSync = new PopupStoreSync(store);
 storeSync.init();
 
 export default store;
