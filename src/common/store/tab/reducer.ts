@@ -1,4 +1,6 @@
 import {UPDATE_TAB_INFO} from './actions';
+import counter from './counter';
+import {combineReducers} from 'redux';
 
 export interface ITabState {
   currentUrl: string;
@@ -7,7 +9,7 @@ export interface ITabState {
 const initialState = {
 };
 
-function reducer(state = initialState, action) {
+function tabInfo(state = initialState, action) {
   switch (action.type) {
     case UPDATE_TAB_INFO:
       return {
@@ -19,4 +21,7 @@ function reducer(state = initialState, action) {
   }
 }
 
-export default reducer;
+export default combineReducers({
+  tabInfo,
+  counter,
+});
