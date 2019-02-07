@@ -1,5 +1,5 @@
 import {Store} from 'redux';
-import {setClonedState} from './sync/actions';
+import {setClonedState, setPatchedState} from './sync/actions';
 import deepDiff from './sync/deepDiff/diff';
 import patch from './sync/deepDiff/patch';
 import _ from 'lodash';
@@ -34,9 +34,13 @@ export default abstract class StoreSync {
     return this.cloneStore();
   }
 
-  syncStore(newState) {
+  syncStore(newState, patchAction = false) {
     this.isSyncing = true;
-    this.store.dispatch(setClonedState(newState));
+    if (patchAction) {
+      this.store.dispatch(setPatchedState(newState));
+    } else {
+      this.store.dispatch(setClonedState(newState));
+    }
     this.isSyncing = false;
   }
 
@@ -104,7 +108,7 @@ export default abstract class StoreSync {
     const filteredPatch = this.filterForApplicablePatch(request.patch);
     console.debug('Filtered patch: ', filteredPatch);
     const newState = patch(this.store.getState(), filteredPatch);
-    this.syncStore(newState);
+    this.syncStore(newState, true);
   }
 
   onStoreChanged = () => {
