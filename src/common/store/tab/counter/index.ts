@@ -15,10 +15,10 @@ const {increment, decrement, showWidget, hideWidget} = createActions({
 const reducer = handleActions(
   {
     [increment]: (state, {payload: {amount}}) => {
-      return {...state, counter: state.counter + amount};
+      return {...state, amount: state.amount + amount};
     },
     [decrement]: (state, {payload: {amount}}) => {
-      return {...state, counter: state.counter + amount};
+      return {...state, amount: state.amount + amount};
     },
     [showWidget]: (state, {payload: {widgetVisible}}) => {
       return {...state, widgetVisible};

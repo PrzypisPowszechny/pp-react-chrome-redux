@@ -27,14 +27,30 @@ export default class BrowserPopup extends React.Component {
 
   render() {
     console.log('render');
-    let url = '';
-    if (this.props.tab && this.props.tab.tabInfo) {
-      url = this.props.tab.tabInfo.currentUrl;
+    let currentUrl = '';
+    let amount = '';
+
+    const tab = this.props.tab;
+    if (tab) {
+      const {
+        tabInfo,
+        counter,
+      } = tab;
+      if (tabInfo) {
+        currentUrl = tabInfo.currentUrl;
+      }
+      if (counter) {
+        amount = counter.amount;
+      }
     }
     return (
       <div>
-        <span> Content script URL: {url} </span>
-        <button onClick={this.props.increment}>increment</button>
+        <span> Content script URL: {currentUrl} </span>
+        <span> Counter amount: {amount} </span>
+        <button onClick={() => this.props.increment()}>increment</button>
+        <button onClick={() => this.props.decrement()}>decrement</button>
+        <button onClick={() => this.props.showWidget()}>show counter in cs</button>
+        <button onClick={() => this.props.hideWidget()}>hide counter in cs</button>
       </div>
     );
   }

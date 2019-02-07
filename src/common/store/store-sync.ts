@@ -1,10 +1,14 @@
 import {Store} from 'redux';
-// import deepDiff from 'react-chrome-redux/strategies/deepDiff/diff';
 import {setClonedState} from './sync/actions';
-import {updateTabInfo} from './tab/actions';
+import deepDiff from './sync/deepDiff/diff';
+import patch from './sync/deepDiff/patch';
 
 export const STORE_PATCH_PROPAGATE = 'STORE_PATCH_PROPAGATE';
 export const STORE_CLONE_REQUEST = 'STORE_CLONE_REQUEST';
+
+export const CONTENT_SCRIPT_INITIATOR = 'CONTENT_SCRIPT_INITIATOR';
+export const POPUP_INITIATOR = 'POPUP_INITIATOR';
+export const BACKGROUND_INITIATOR = 'BACKGROUND_INITIATOR';
 
 export default abstract class StoreSync {
 
@@ -25,6 +29,12 @@ export default abstract class StoreSync {
     this.cloneStore();
   }
 
+  syncStore(newState) {
+    this.isSyncing = true;
+    this.store.dispatch(setClonedState(newState));
+    this.isSyncing = false;
+  }
+
   onMessage = (request, sender, sendResponse) => {
     throw new Error('not implemented');
   }
@@ -43,9 +53,8 @@ export default abstract class StoreSync {
     } else {
       console.debug('Redux state modified; propagating changes to other stores');
       const state = this.store.getState();
-      //TODO
-      const diff = {};
-      // const diff = deepDiff(this.prevState, state);
+      const diff = deepDiff(this.prevState, state);
+      this.prevState = this.store.getState();
       this.propagateStoreChange(diff);
     }
   }
@@ -68,8 +77,10 @@ export class ContentScriptStoreSync extends StoreSync {
   onMessage = (request, sender, sendResponse) => {
     switch (request.action) {
       case STORE_PATCH_PROPAGATE:
-        // TODO
-        sendResponse(null);
+        console.debug(`Received ${request.action} message from ${request.initiator}`);
+        console.log(request.patch)
+        const newState = patch(this.store.getState(), request.patch);
+        this.syncStore(newState);
         break;
       case STORE_CLONE_REQUEST:
         sendResponse({
@@ -89,28 +100,34 @@ export class PopupStoreSync extends StoreSync {
           action: STORE_CLONE_REQUEST,
         }, ((response) => {
           Promise.resolve(response).then((response) => {
-            this.isSyncing = true;
             if (response) {
-              this.store.dispatch(setClonedState(response.state));
+              this.syncStore(response.state);
             } else {
               console.error(`Received no response for ${STORE_CLONE_REQUEST} message`);
             }
-            // this.store.dispatch(updateTabInfo({currentUrl: 'sdfdssdf'}));
-            this.isSyncing = false;
           });
         }));
     });
   }
 
   propagateStoreChange(diff: any) {
-    // TODO
+    const message = {
+      action: STORE_PATCH_PROPAGATE,
+      patch: diff,
+      initiator: POPUP_INITIATOR,
+    };
+
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+      chrome.tabs.sendMessage(tabs[0].id, message);
+    });
+
+    chrome.runtime.sendMessage(message);
   }
 
   onMessage = (request, sender, sendResponse) => {
     switch (request.action) {
       case STORE_PATCH_PROPAGATE:
         // TODO
-        sendResponse(null);
         break;
       case STORE_CLONE_REQUEST:
         // TODO
@@ -119,7 +136,21 @@ export class PopupStoreSync extends StoreSync {
 }
 
 export class BackgroundStoreSync extends StoreSync {
+
   cloneStore() {}
 
   propagateStoreChange(diff: any) {}
+
+  onMessage = (request, sender, sendResponse) => {
+    // switch (request.action) {
+    //   case STORE_PATCH_PROPAGATE:
+    //     console.debug(`Received a ${STORE_PATCH_PROPAGATE} message from ${request.initiator}`);
+    //     if (request.initiator === POPUP_INITIATOR)
+    //     chrome.runtime.sendMessage()
+    //     break;
+    //   case STORE_CLONE_REQUEST:
+    //     // TODO
+    // }
+  }
+
 }
