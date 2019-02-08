@@ -1,31 +1,31 @@
-import {applyMiddleware, compose, createStore, Store} from 'redux';
+import { applyMiddleware, compose, createStore, Store } from 'redux';
 import thunk from 'redux-thunk';
-import {IState, syncBackgroundReducer} from '../../common/store/reducer';
+import rootReducer, { IState } from '../../common/store/reducer';
 import promise from 'redux-promise';
-import {createLogger} from 'redux-logger';
-import {BackgroundStoreSync} from '../../common/store/store-sync';
+import { createLogger } from 'redux-logger';
+import { wrapStore, alias } from 'react-chrome-redux';
+import deepDiff from 'react-chrome-redux/lib/strategies/deepDiff/diff';
+import { composeWithDevTools } from 'remote-redux-devtools';
 
-// TS override
-declare global {
-  interface Window {
-    __REDUX_DEVTOOLS_EXTENSION_COMPOSE__: any;
-  }
-}
-
-const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 const middlewares = [thunk, promise];
 
 if (PPSettings.DEV) {
   const logger = createLogger();
   middlewares.push(logger);
 }
+
+const aliases = {};
+
 const store: Store<IState> = createStore(
-  syncBackgroundReducer,
-  composeEnhancers(
-    applyMiddleware(...middlewares),
+  rootReducer,
+  composeWithDevTools(
+    applyMiddleware(alias(aliases), ...middlewares),
   ),
 );
 
-export const storeSync = new BackgroundStoreSync(store);
+const wrappedStore = wrapStore(store, {
+  portName: 'PP',
+  diffStrategy: deepDiff,
+});
 
-export default store;
+export default wrappedStore;

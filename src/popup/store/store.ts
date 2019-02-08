@@ -1,30 +1,20 @@
-import { applyMiddleware, compose, createStore, Store } from 'redux';
 import thunk from 'redux-thunk';
-import {IState, syncPopupReducer} from '../../common/store/reducer';
 import promise from 'redux-promise';
 import { createLogger } from 'redux-logger';
-import {PopupStoreSync} from '../../common/store/store-sync';
+import { Store, applyMiddleware } from 'react-chrome-redux';
+import patchDeepDiff from 'react-chrome-redux/lib/strategies/deepDiff/patch';
 
-// TS override
-declare global {
-  interface Window { __REDUX_DEVTOOLS_EXTENSION_COMPOSE__: any; }
-}
-
-const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 const middlewares = [thunk, promise];
 
 if (PPSettings.DEV) {
   const logger = createLogger();
   middlewares.push(logger);
 }
-const store: Store<IState> = createStore(
-  syncPopupReducer,
-  composeEnhancers(
-    applyMiddleware(...middlewares),
-  ),
-);
+const proxyStore = new Store({
+  portName: 'PP',
+  patchStrategy: patchDeepDiff,
+});
 
-const storeSync = new PopupStoreSync(store);
-storeSync.init();
+const storeWithMiddleware = applyMiddleware(proxyStore, ...middlewares);
 
-export default store;
+export default storeWithMiddleware;

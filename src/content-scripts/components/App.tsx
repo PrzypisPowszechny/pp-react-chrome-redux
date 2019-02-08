@@ -1,7 +1,8 @@
 import React from 'react';
-import {connect} from 'react-redux';
+import { connect } from 'react-redux';
 import Modal from './Modal/Modal';
 import StateDisplay from '../../common/StateDisplay';
+import { selectTab } from '../../common/store/selectors';
 
 interface AppProps {
   editor: any;
@@ -13,7 +14,7 @@ interface AppProps {
 
 @connect(
   state => ({
-    tab: state.tab,
+    tab: selectTab(state),
   }),
 )
 export default class App extends React.Component<Partial<AppProps>, {}> {
@@ -25,7 +26,7 @@ export default class App extends React.Component<Partial<AppProps>, {}> {
   renderWidget() {
     return (
       <Modal>
-        <div style={{backgroundColor: 'white', padding: '100px'}}>
+        <div style={{ backgroundColor: 'white', padding: '100px' }}>
           <StateDisplay/>
         </div>
       </Modal>
@@ -33,6 +34,7 @@ export default class App extends React.Component<Partial<AppProps>, {}> {
   }
 
   render() {
+    console.log(this.props);
     return (
       <div>
         {this.props.tab.counter.widgetVisible && this.renderWidget()}
